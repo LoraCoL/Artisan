@@ -1,4 +1,5 @@
 ﻿using Artisan.CraftingLogic;
+using Artisan.RawInformation;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
@@ -15,6 +16,9 @@ namespace Artisan.Autocraft
         internal static int offset = 0;
         internal static int SelRecId = 0;
         internal static bool Debug = false;
+
+        public static int DebugValue = 0;
+
         internal static void Draw()
         {
             ImGui.Checkbox("Debug logging", ref Debug);
@@ -75,6 +79,9 @@ namespace Artisan.Autocraft
 
             if (ImGui.CollapsingHeader("制作状态"))
             {
+
+                ImGui.Text($"Control: {CharacterInfo.Control()}");
+                ImGui.Text($"Craftsmanship: {CharacterInfo.Craftsmanship()}");
                 ImGui.Text($"当前耐久: {CurrentCraft.CurrentDurability}");
                 ImGui.Text($"最大耐久: {CurrentCraft.MaxDurability}");
                 ImGui.Text($"当前进展: {CurrentCraft.CurrentProgress}");
@@ -84,8 +91,33 @@ namespace Artisan.Autocraft
                 ImGui.Text($"物品名称: {CurrentCraft.ItemName}");
                 ImGui.Text($"当前状态: {CurrentCraft.CurrentCondition}");
                 ImGui.Text($"当前步骤: {CurrentCraft.CurrentStep}");
+                ImGui.Text($"Current Quick Synth Step: {CurrentCraft.QuickSynthCurrent}");
+                ImGui.Text($"Max Quick Synth Step: {CurrentCraft.QuickSynthMax}");
                 ImGui.Text($"内静+贝尔格: {CurrentCraft.GreatStridesByregotCombo()}");
                 ImGui.Text($"预期品质: {CurrentCraft.CalculateNewQuality(CurrentCraft.CurrentRecommendation)}");
+                ImGui.Text($"Macro Step: {CurrentCraft.MacroStep}");
+                ImGui.Text($"Collectibility Low: {CurrentCraft.CollectabilityLow}");
+                ImGui.Text($"Collectibility Mid: {CurrentCraft.CollectabilityMid}");
+                ImGui.Text($"Collectibility High: {CurrentCraft.CollectabilityHigh}");
+            }
+
+            if (ImGui.CollapsingHeader("Spiritbonds"))
+            {
+                ImGui.Text($"Weapon Spiritbond: {Spiritbond.Weapon}");
+                ImGui.Text($"Off-hand Spiritbond: {Spiritbond.Offhand}");
+                ImGui.Text($"Helm Spiritbond: {Spiritbond.Helm}");
+                ImGui.Text($"Body Spiritbond: {Spiritbond.Body}");
+                ImGui.Text($"Hands Spiritbond: {Spiritbond.Hands}");
+                ImGui.Text($"Legs Spiritbond: {Spiritbond.Legs}");
+                ImGui.Text($"Feet Spiritbond: {Spiritbond.Feet}");
+                ImGui.Text($"Earring Spiritbond: {Spiritbond.Earring}");
+                ImGui.Text($"Neck Spiritbond: {Spiritbond.Neck}");
+                ImGui.Text($"Wrist Spiritbond: {Spiritbond.Wrist}");
+                ImGui.Text($"Ring 1 Spiritbond: {Spiritbond.Ring1}");
+                ImGui.Text($"Ring 2 Spiritbond: {Spiritbond.Ring2}");
+
+                ImGui.Text($"Spiritbond Ready Any: {Spiritbond.IsSpiritbondReadyAny()}");
+
             }
             ImGui.Separator();
 
@@ -96,6 +128,31 @@ namespace Artisan.Autocraft
             ImGuiEx.Text($"装备耐久: {RepairManager.GetMinEquippedPercent()}");
             ImGuiEx.Text($"选中的配方: {AgentRecipeNote.Instance()->SelectedRecipeIndex}");
             ImGuiEx.Text($"材料是否足够: {HQManager.InsufficientMaterials}");
+
+            if (ImGui.Button($"Open Endurance Item"))
+            {
+                CraftingLists.CraftingListFunctions.OpenRecipeByID((uint)Handler.RecipeID);
+            }
+
+            ImGui.InputInt("Debug Value", ref DebugValue);
+
+            if (ImGui.Button($"Open And Quick Synth"))
+            {
+                CurrentCraft.QuickSynthItem(DebugValue);
+            }
+            if (ImGui.Button($"Close Quick Synth Window"))
+            {
+                CurrentCraft.CloseQuickSynthWindow();
+            }
+            if (ImGui.Button($"Open Materia Window"))
+            {
+                Spiritbond.OpenMateriaMenu();
+            }
+            if (ImGui.Button($"Extract First Materia"))
+            {
+                Spiritbond.ExtractFirstMateria();
+            }
+
 
             /*ImGui.InputInt("id", ref SelRecId);
             if (ImGui.Button("OpenRecipeByRecipeId"))
