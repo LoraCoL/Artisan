@@ -167,7 +167,7 @@ namespace Artisan
             var baseY = addonPtr->Y;
 
             if (addonPtr->UldManager.NodeList[1]->IsVisible)
-            AtkResNodeFunctions.DrawOptions(addonPtr->UldManager.NodeList[1]);
+                AtkResNodeFunctions.DrawOptions(addonPtr->UldManager.NodeList[1]);
         }
 
         private unsafe void DrawMacroChoiceOnRecipe()
@@ -458,20 +458,20 @@ namespace Artisan
                 Service.Configuration.Save();
             }
 
-            if (ImGui.Checkbox("Disable Recipe List mini-menu", ref disableMini))
+            if (ImGui.Checkbox("禁用迷你菜单", ref disableMini))
             {
                 Service.Configuration.DisableMiniMenu = disableMini;
                 Service.Configuration.Save();
             }
-            ImGuiComponents.HelpMarker("Hides the mini-menu for config settings in the recipe list. Still shows individual macro menu.");
+            ImGuiComponents.HelpMarker("在配方列表内隐藏迷你菜单中的配置. 仍旧会显示宏菜单.");
 
             bool lockMini = Service.Configuration.LockMiniMenu;
-            if (ImGui.Checkbox("Keep Recipe List mini-menu position attached to Recipe List.", ref lockMini))
+            if (ImGui.Checkbox("保持迷你菜单吸附至游戏配方窗口.", ref lockMini))
             {
                 Service.Configuration.LockMiniMenu = lockMini;
                 Service.Configuration.Save();
             }
-            if (ImGui.Button("Reset Recipe List mini-menu position"))
+            if (ImGui.Button("重设迷你菜单位置"))
             {
                 AtkResNodeFunctions.ResetPosition = true;
             }

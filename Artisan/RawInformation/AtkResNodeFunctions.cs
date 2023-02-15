@@ -64,7 +64,7 @@ namespace Artisan.RawInformation
         {
             bool autoMode = Service.Configuration.AutoMode;
 
-            if (ImGui.Checkbox("Auto Mode", ref autoMode))
+            if (ImGui.Checkbox("自动模式", ref autoMode))
             {
                 Service.Configuration.AutoMode = autoMode;
                 Service.Configuration.Save();
@@ -84,10 +84,10 @@ namespace Artisan.RawInformation
             //    }
             //}
 
-            ImGui.Checkbox("Endurance Mode Toggle", ref Handler.Enable);
+            ImGui.Checkbox("长效模式", ref Handler.Enable);
 
             bool macroMode = Service.Configuration.UseMacroMode;
-            if (ImGui.Checkbox("Macro Mode", ref macroMode))
+            if (ImGui.Checkbox("宏模式", ref macroMode))
             {
                 Service.Configuration.UseMacroMode = macroMode;
                 Service.Configuration.Save();
@@ -135,7 +135,7 @@ namespace Artisan.RawInformation
             }
 
             ImGui.Spacing();
-            ImGui.Text($"Use a macro for this recipe ({Handler.RecipeName})");
+            ImGui.Text($"为配方 ({Handler.RecipeName}) 选择一个宏");
             if (ImGui.BeginCombo("", preview))
             {
                 if (ImGui.Selectable(""))
@@ -167,7 +167,7 @@ namespace Artisan.RawInformation
             var size = new Vector2(node->Width, node->Height) * scale;
             var center = new Vector2((position.X + size.X) / 2, (position.Y - size.Y) / 2);
             position += ImGuiHelpers.MainViewport.Pos;
-            var textHeight = ImGui.CalcTextSize("Craft X Times:");
+            var textHeight = ImGui.CalcTextSize("仅制作N次:");
 
             ImGuiHelpers.ForceNextWindowMainViewport();
             ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X + size.X + 11f, position.Y + size.Y - (textHeight.Y * 2) - 3f));
@@ -179,7 +179,7 @@ namespace Artisan.RawInformation
                 | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNavFocus
                 | ImGuiWindowFlags.AlwaysUseWindowPadding | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoSavedSettings);
 
-            ImGui.Text("Craft X Times:");
+            ImGui.Text("仅制作N次:");
             ImGui.SameLine();
             ImGui.PushItemWidth(100);
             if (ImGui.InputInt($"###TimesRepeat{node->NodeID}", ref Service.Configuration.CraftX))
@@ -189,7 +189,7 @@ namespace Artisan.RawInformation
 
             }
             ImGui.SameLine();
-            if (ImGui.Button("Craft") && Service.Configuration.CraftX > 0)
+            if (ImGui.Button("制作") && Service.Configuration.CraftX > 0)
             {
                 Service.Configuration.CraftingX = true;
                 Handler.Enable = true;
@@ -280,8 +280,8 @@ namespace Artisan.RawInformation
             ImGui.Begin($"###SliderQuality", ImGuiWindowFlags.NoScrollbar
                 | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNavFocus
                 | ImGuiWindowFlags.AlwaysUseWindowPadding | ImGuiWindowFlags.NoTitleBar);
-            var textSize = ImGui.CalcTextSize("Simulated Starting Quality");
-            ImGui.TextUnformatted($"Simulated Starting Quality");
+            var textSize = ImGui.CalcTextSize("模拟初始品质");
+            ImGui.TextUnformatted($"模拟初始品质");
             ImGui.PushItemWidth(textSize.Length());
             if (ImGui.SliderInt("", ref currentSimulated, 0, (int)maxFactor))
             {

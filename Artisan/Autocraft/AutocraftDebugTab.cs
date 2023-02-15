@@ -79,9 +79,8 @@ namespace Artisan.Autocraft
 
             if (ImGui.CollapsingHeader("制作状态"))
             {
-
-                ImGui.Text($"Control: {CharacterInfo.Control()}");
-                ImGui.Text($"Craftsmanship: {CharacterInfo.Craftsmanship()}");
+                ImGui.Text($"加工精度: {CharacterInfo.Control()}");
+                ImGui.Text($"作业精度: {CharacterInfo.Craftsmanship()}");
                 ImGui.Text($"当前耐久: {CurrentCraft.CurrentDurability}");
                 ImGui.Text($"最大耐久: {CurrentCraft.MaxDurability}");
                 ImGui.Text($"当前进展: {CurrentCraft.CurrentProgress}");
@@ -91,32 +90,32 @@ namespace Artisan.Autocraft
                 ImGui.Text($"物品名称: {CurrentCraft.ItemName}");
                 ImGui.Text($"当前状态: {CurrentCraft.CurrentCondition}");
                 ImGui.Text($"当前步骤: {CurrentCraft.CurrentStep}");
-                ImGui.Text($"Current Quick Synth Step: {CurrentCraft.QuickSynthCurrent}");
-                ImGui.Text($"Max Quick Synth Step: {CurrentCraft.QuickSynthMax}");
-                ImGui.Text($"内静+贝尔格: {CurrentCraft.GreatStridesByregotCombo()}");
+                ImGui.Text($"当前快速制作步骤: {CurrentCraft.QuickSynthCurrent}");
+                ImGui.Text($"最大快速制作步骤: {CurrentCraft.QuickSynthMax}");
+                ImGui.Text($"内静+比尔格: {CurrentCraft.GreatStridesByregotCombo()}");
                 ImGui.Text($"预期品质: {CurrentCraft.CalculateNewQuality(CurrentCraft.CurrentRecommendation)}");
-                ImGui.Text($"Macro Step: {CurrentCraft.MacroStep}");
+                ImGui.Text($"当前宏步骤: {CurrentCraft.MacroStep}");
                 ImGui.Text($"Collectibility Low: {CurrentCraft.CollectabilityLow}");
                 ImGui.Text($"Collectibility Mid: {CurrentCraft.CollectabilityMid}");
                 ImGui.Text($"Collectibility High: {CurrentCraft.CollectabilityHigh}");
             }
 
-            if (ImGui.CollapsingHeader("Spiritbonds"))
+            if (ImGui.CollapsingHeader("魔晶石精炼"))
             {
-                ImGui.Text($"Weapon Spiritbond: {Spiritbond.Weapon}");
-                ImGui.Text($"Off-hand Spiritbond: {Spiritbond.Offhand}");
-                ImGui.Text($"Helm Spiritbond: {Spiritbond.Helm}");
-                ImGui.Text($"Body Spiritbond: {Spiritbond.Body}");
-                ImGui.Text($"Hands Spiritbond: {Spiritbond.Hands}");
-                ImGui.Text($"Legs Spiritbond: {Spiritbond.Legs}");
-                ImGui.Text($"Feet Spiritbond: {Spiritbond.Feet}");
-                ImGui.Text($"Earring Spiritbond: {Spiritbond.Earring}");
-                ImGui.Text($"Neck Spiritbond: {Spiritbond.Neck}");
-                ImGui.Text($"Wrist Spiritbond: {Spiritbond.Wrist}");
-                ImGui.Text($"Ring 1 Spiritbond: {Spiritbond.Ring1}");
-                ImGui.Text($"Ring 2 Spiritbond: {Spiritbond.Ring2}");
+                ImGui.Text($"主手 精炼度: {Spiritbond.Weapon}");
+                ImGui.Text($"副手 精炼度: {Spiritbond.Offhand}");
+                ImGui.Text($"头部 精炼度: {Spiritbond.Helm}");
+                ImGui.Text($"身体 精炼度: {Spiritbond.Body}");
+                ImGui.Text($"手臂 精炼度: {Spiritbond.Hands}");
+                ImGui.Text($"腿部 精炼度: {Spiritbond.Legs}");
+                ImGui.Text($"脚部 精炼度: {Spiritbond.Feet}");
+                ImGui.Text($"耳部 精炼度: {Spiritbond.Earring}");
+                ImGui.Text($"颈部 精炼度: {Spiritbond.Neck}");
+                ImGui.Text($"腕部 精炼度: {Spiritbond.Wrist}");
+                ImGui.Text($"右指 精炼度: {Spiritbond.Ring1}");
+                ImGui.Text($"左指 精炼度: {Spiritbond.Ring2}");
 
-                ImGui.Text($"Spiritbond Ready Any: {Spiritbond.IsSpiritbondReadyAny()}");
+                ImGui.Text($"是否有已经满精炼度的装备: {Spiritbond.IsSpiritbondReadyAny()}");
 
             }
             ImGui.Separator();
@@ -127,28 +126,28 @@ namespace Artisan.Autocraft
             }
             ImGuiEx.Text($"装备耐久: {RepairManager.GetMinEquippedPercent()}");
             ImGuiEx.Text($"选中的配方: {AgentRecipeNote.Instance()->SelectedRecipeIndex}");
-            ImGuiEx.Text($"材料是否足够: {HQManager.InsufficientMaterials}");
+            ImGuiEx.Text($"材料不足: {HQManager.InsufficientMaterials}");
 
-            if (ImGui.Button($"Open Endurance Item"))
+            if (ImGui.Button($"打开长久模式的物品配方"))
             {
                 CraftingLists.CraftingListFunctions.OpenRecipeByID((uint)Handler.RecipeID);
             }
 
             ImGui.InputInt("Debug Value", ref DebugValue);
 
-            if (ImGui.Button($"Open And Quick Synth"))
+            if (ImGui.Button($"打开并进行快速制作"))
             {
                 CurrentCraft.QuickSynthItem(DebugValue);
             }
-            if (ImGui.Button($"Close Quick Synth Window"))
+            if (ImGui.Button($"关闭快速制作窗口"))
             {
                 CurrentCraft.CloseQuickSynthWindow();
             }
-            if (ImGui.Button($"Open Materia Window"))
+            if (ImGui.Button($"打开精制魔晶石窗口"))
             {
                 Spiritbond.OpenMateriaMenu();
             }
-            if (ImGui.Button($"Extract First Materia"))
+            if (ImGui.Button($"精制其中一个魔晶石"))
             {
                 Spiritbond.ExtractFirstMateria();
             }

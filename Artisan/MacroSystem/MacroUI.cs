@@ -233,15 +233,15 @@ namespace Artisan.MacroSystem
                     ImGui.Columns(1);
                     ImGuiEx.ImGuiLineCentered("MTimeHead", delegate
                     {
-                        ImGuiEx.TextUnderlined($"Estimated Macro Length");
+                        ImGuiEx.TextUnderlined($"预计宏执行用时");
                     });
                     ImGuiEx.ImGuiLineCentered("MTimeArtisan", delegate
                     {
-                        ImGuiEx.Text($"Artisan: {GetMacroLength(selectedMacro)} seconds");
+                        ImGuiEx.Text($"Artisan: {GetMacroLength(selectedMacro)} 秒");
                     });
                     ImGuiEx.ImGuiLineCentered("MTimeTeamcraft", delegate
                     {
-                        ImGuiEx.Text($"Normal Macro: {GetTeamcraftMacroLength(selectedMacro)} seconds");
+                        ImGuiEx.Text($"正常宏: {GetTeamcraftMacroLength(selectedMacro)} 秒");
                     });
                     ImGui.EndChild();
                 }

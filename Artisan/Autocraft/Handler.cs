@@ -294,12 +294,12 @@ namespace Artisan.Autocraft
 
 
             bool materia = Service.Configuration.Materia;
-            if (ImGui.Checkbox("Automatically Extract Materia", ref materia))
+            if (ImGui.Checkbox("自动精制魔晶石", ref materia))
             {
                 Service.Configuration.Materia = materia;
                 Service.Configuration.Save();
             }
-            ImGuiComponents.HelpMarker("Will automatically extract materia from any equipped gear once it's spiritbond is 100%");
+            ImGuiComponents.HelpMarker("当身上的装备有其中一件的精炼值达到100%之后自动进行魔晶石精制");
 
             ImGui.Checkbox("仅制作N次", ref Service.Configuration.CraftingX);
             if (Service.Configuration.CraftingX)
