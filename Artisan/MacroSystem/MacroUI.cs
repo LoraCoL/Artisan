@@ -1,5 +1,6 @@
 ﻿using Artisan.RawInformation;
 using Dalamud.Interface.Components;
+using ECommons.ImGuiMethods;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -13,18 +14,22 @@ namespace Artisan.MacroSystem
     internal class MacroUI
     {
         private static string _newMacroName = string.Empty;
+        private static string renameMacro = string.Empty;
         private static bool _keyboardFocus;
         private const string MacroNamePopupLabel = "Macro Name";
         private static Macro selectedMacro = new();
         private static int selectedActionIndex = -1;
+        private static bool renameMode = false;
 
         internal static void Draw()
         {
-            ImGui.TextWrapped("此选项卡将允许您添加Artisan可以使用的宏，而不是它自己决定。");
+            ImGui.TextWrapped("此选项卡将允许您添加Artisan可以使用的宏，而不是由它自己决定下一步。");
             ImGui.Separator();
             ImGui.Spacing();
-            if (ImGui.Button("从剪贴板导入宏"))
+            if (ImGui.Button("从剪切板导入宏"))
                 OpenMacroNamePopup(MacroNameUse.FromClipboard);
+
+            ImGui.SameLine();
 
             if (ImGui.Button("新建宏"))
                 OpenMacroNamePopup(MacroNameUse.NewMacro);
@@ -38,8 +43,8 @@ namespace Artisan.MacroSystem
                 float longestName = 0;
                 foreach (var macro in Service.Configuration.UserMacros)
                 {
-                    if (ImGui.CalcTextSize($"{macro.Name} (CP: {GetCPCost(macro)})").Length() > longestName)
-                        longestName = ImGui.CalcTextSize($"{macro.Name} (CP: {GetCPCost(macro)})").Length();
+                    if (ImGui.CalcTextSize($"{macro.Name} (消耗的制作力: {GetCPCost(macro)})").Length() > longestName)
+                        longestName = ImGui.CalcTextSize($"{macro.Name} (消耗的制作力: {GetCPCost(macro)})").Length();
                 }
 
                 longestName = Math.Max(150, longestName);
@@ -49,7 +54,7 @@ namespace Artisan.MacroSystem
                     foreach (Macro m in Service.Configuration.UserMacros)
                     {
                         uint cpCost = GetCPCost(m);
-                        var selected = ImGui.Selectable($"{m.Name} (CP: {cpCost})###{m.ID}", m.ID == selectedMacro.ID);
+                        var selected = ImGui.Selectable($"{m.Name} (消耗的制作力: {cpCost})###{m.ID}", m.ID == selectedMacro.ID);
 
                         if (selected)
                         {
@@ -62,8 +67,28 @@ namespace Artisan.MacroSystem
                 {
                     ImGui.SameLine();
                     ImGui.BeginChild("###selectedMacro", new Vector2(0, 0), false);
-                    ImGui.Text($"选择的宏: {selectedMacro.Name}");
-                    if (ImGui.Button("删除宏（按住Ctrl）") && ImGui.GetIO().KeyCtrl)
+                    if (!renameMode)
+                    {
+                        ImGui.Text($"已选中的宏: {selectedMacro.Name}");
+                        ImGui.SameLine();
+                        if (ImGuiComponents.IconButton(Dalamud.Interface.FontAwesomeIcon.Pen))
+                        {
+                            renameMode = true;
+                        }
+                    }
+                    else
+                    {
+                        renameMacro = selectedMacro.Name;
+                        if (ImGui.InputText("", ref renameMacro, 64, ImGuiInputTextFlags.EnterReturnsTrue))
+                        {
+                            selectedMacro.Name = renameMacro;
+                            Service.Configuration.Save();
+
+                            renameMode = false;
+                            renameMacro = String.Empty;
+                        }
+                    }
+                    if (ImGui.Button("删除宏 (按下Ctrl)") && ImGui.GetIO().KeyCtrl)
                     {
                         Service.Configuration.UserMacros.Remove(selectedMacro);
                         if (Service.Configuration.SetMacro?.ID == selectedMacro.ID)
@@ -72,28 +97,30 @@ namespace Artisan.MacroSystem
                         Service.Configuration.Save();
                         selectedMacro = new();
                         selectedActionIndex = -1;
+
+                        Artisan.CleanUpIndividualMacros();
                     }
                     ImGui.Spacing();
                     ImGui.SameLine();
                     bool skipQuality = selectedMacro.MacroOptions.SkipQualityIfMet;
-                    if (ImGui.Checkbox("如果达到100%，则跳过品质技能", ref skipQuality))
+                    if (ImGui.Checkbox("当品质达到100%时跳过提升品质的技能", ref skipQuality))
                     {
                         selectedMacro.MacroOptions.SkipQualityIfMet = skipQuality;
                         if (Service.Configuration.SetMacro?.ID == selectedMacro.ID)
                             Service.Configuration.SetMacro = selectedMacro;
                         Service.Configuration.Save();
                     }
-                    ImGuiComponents.HelpMarker("一旦达到100%品质，宏将跳过所有与品质相关的操作，包括增益。");
+                    ImGuiComponents.HelpMarker("当品质达到100%时, 将会跳过所有与提升品质相关的技能, 包括增益。");
                     ImGui.SameLine();
                     bool upgradeActions = selectedMacro.MacroOptions.UpgradeActions;
-                    if (ImGui.Checkbox("升级技能", ref upgradeActions))
+                    if (ImGui.Checkbox("自动升级技能", ref upgradeActions))
                     {
                         selectedMacro.MacroOptions.UpgradeActions = upgradeActions;
                         if (Service.Configuration.SetMacro?.ID == selectedMacro.ID)
                             Service.Configuration.SetMacro = selectedMacro;
                         Service.Configuration.Save();
                     }
-                    ImGuiComponents.HelpMarker("如果您获得了高品质或最高品质的状态，并且您的宏处于提高品质或进展的步骤（不包括比尔格的祝福），那么它将根据原始操作增加的内容将技能升级为集中加工或集中制作。");
+                    ImGuiComponents.HelpMarker("当状态为高品质或最高品质, 且当前宏处于提升品质或推动进展的步骤上（不包括比尔格的祝福）那么它将根据原始操作将技能升级为集中加工或集中制作。");
 
                     ImGui.Columns(2, "actionColumns", false);
                     if (ImGui.Button("插入新技能"))
@@ -121,7 +148,7 @@ namespace Artisan.MacroSystem
                             return;
 
                         ImGui.NextColumn();
-                        ImGui.Text($"选择技能: {GetActionName(selectedMacro.MacroActions[selectedActionIndex])}");
+                        ImGui.Text($"选择的技能: {GetActionName(selectedMacro.MacroActions[selectedActionIndex])}");
                         if (selectedActionIndex > 0)
                         {
                             ImGui.SameLine();
@@ -204,6 +231,18 @@ namespace Artisan.MacroSystem
 
                     }
                     ImGui.Columns(1);
+                    ImGuiEx.ImGuiLineCentered("MTimeHead", delegate
+                    {
+                        ImGuiEx.TextUnderlined($"预计宏执行用时");
+                    });
+                    ImGuiEx.ImGuiLineCentered("MTimeArtisan", delegate
+                    {
+                        ImGuiEx.Text($"Artisan: {GetMacroLength(selectedMacro)} 秒");
+                    });
+                    ImGuiEx.ImGuiLineCentered("MTimeTeamcraft", delegate
+                    {
+                        ImGuiEx.Text($"正常宏: {GetTeamcraftMacroLength(selectedMacro)} 秒");
+                    });
                     ImGui.EndChild();
                 }
                 else
@@ -222,9 +261,17 @@ namespace Artisan.MacroSystem
 
         private static uint GetCPCost(Macro m)
         {
+            uint previousAction = 0;
             uint output = 0;
             foreach (var act in m.MacroActions)
             {
+                if ((act == Skills.StandardTouch && previousAction == Skills.BasicTouch) || (act == Skills.AdvancedTouch && previousAction == Skills.StandardTouch))
+                {
+                    output += 18;
+                    previousAction = act;
+                    continue;
+                }
+
                 if (act >= 100000)
                 {
                     output += LuminaSheets.CraftActions[act].Cost;
@@ -233,10 +280,84 @@ namespace Artisan.MacroSystem
                 {
                     output += LuminaSheets.ActionSheet[act].PrimaryCostValue;
                 }
+
+                previousAction = act;
             }
 
             return output;
         }
+
+        private static double GetMacroLength(Macro m)
+        {
+            double output = 0;
+            var delay = (double)Service.Configuration.AutoDelay;
+            var delaySeconds = delay / 1000;
+
+            foreach (var act in m.MacroActions)
+            {
+                if (ActionIsLengthyAnimation(act))
+                {
+                    output += 2.5 + delaySeconds;
+                }
+                else
+                {
+                    output += 1.25 + delaySeconds;
+                }
+            }
+
+            return Math.Round(output, 2);
+
+        }
+
+        private static float GetTeamcraftMacroLength(Macro m)
+        {
+            float output = 0;
+            foreach (var act in m.MacroActions)
+            {
+                if (ActionIsLengthyAnimation(act))
+                {
+                    output += 3f;
+                }
+                else
+                {
+                    output += 2f;
+                }
+            }
+
+            return output;
+
+        }
+        private static bool ActionIsLengthyAnimation(uint id)
+        {
+            switch (id)
+            {
+                case Skills.BasicSynth:
+                case Skills.RapidSynthesis:
+                case Skills.MuscleMemory:
+                case Skills.CarefulSynthesis:
+                case Skills.FocusedSynthesis:
+                case Skills.Groundwork:
+                case Skills.DelicateSynthesis:
+                case Skills.IntensiveSynthesis:
+                case Skills.PrudentSynthesis:
+                case Skills.BasicTouch:
+                case Skills.HastyTouch:
+                case Skills.StandardTouch:
+                case Skills.PreciseTouch:
+                case Skills.PrudentTouch:
+                case Skills.FocusedTouch:
+                case Skills.Reflect:
+                case Skills.PreparatoryTouch:
+                case Skills.AdvancedTouch:
+                case Skills.TrainedFinesse:
+                case Skills.ByregotsBlessing:
+                case Skills.MastersMend:
+                    return true;
+                    default:
+                    return false;
+            };
+        }
+
 
         private static string GetActionName(uint action)
         {
@@ -280,7 +401,7 @@ namespace Artisan.MacroSystem
                                 if (macro.ID != 0)
                                     if (macro.Save())
                                     {
-                                        Service.ChatGui.Print($"{macro.Name} 已保存。");
+                                        Service.ChatGui.Print($"{macro.Name} 已保存.");
                                     }
                                     else
                                     {
@@ -291,7 +412,7 @@ namespace Artisan.MacroSystem
                             }
                             catch (Exception e)
                             {
-                                Dalamud.Logging.PluginLog.Information($"Could not save new Macro from Clipboard:\n{e}");
+                                Dalamud.Logging.PluginLog.Information($"无法从剪切板保存新的宏：\n{e}");
                             }
 
                             break;

@@ -1,4 +1,5 @@
 ﻿using Artisan.CraftingLogic;
+using Artisan.RawInformation;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.Components;
 using Dalamud.Logging;
@@ -27,7 +28,7 @@ namespace Artisan.Autocraft
         internal static bool Enable = false;
         internal static List<int>? HQData = null;
         internal static int RecipeID = 0;
-        internal static string RecipeName { get => recipeName; set { if (value != recipeName) Dalamud.Logging.PluginLog.Debug($"{value}"); recipeName = value; } }
+        internal static string RecipeName { get => recipeName; set { if (value != recipeName) PluginLog.Verbose($"{value}"); recipeName = value; } }
         internal static CircularBuffer<long> Errors = new(5);
         private static string recipeName = "";
 
@@ -74,6 +75,9 @@ namespace Artisan.Autocraft
         {
             if (Enable)
             {
+                var isCrafting = Service.Condition[ConditionFlag.Crafting];
+                var preparing = Service.Condition[ConditionFlag.PreparingToCraft];
+
                 if (!Throttler.Throttle(0))
                 {
                     return;
@@ -81,6 +85,7 @@ namespace Artisan.Autocraft
                 if (Service.Configuration.CraftingX && Service.Configuration.CraftX == 0)
                 {
                     Enable = false;
+                    Service.Configuration.CraftingX = false;
                     return;
                 }
                 if (Svc.Condition[ConditionFlag.Occupied39])
@@ -95,7 +100,33 @@ namespace Artisan.Autocraft
                     return;
                 }
                 if (AutocraftDebugTab.Debug) PluginLog.Verbose("HQ not null");
-                if (Service.Configuration.Repair && !RepairManager.ProcessRepair(false))
+                if (Service.Configuration.Materia && Spiritbond.IsSpiritbondReadyAny())
+                {
+                    if (AutocraftDebugTab.Debug) PluginLog.Verbose("Entered materia extraction");
+                    if (TryGetAddonByName<AtkUnitBase>("RecipeNote", out var addon) && addon->IsVisible && Svc.Condition[ConditionFlag.Crafting])
+                    {
+                        if (AutocraftDebugTab.Debug) PluginLog.Verbose("Crafting");
+                        if (Throttler.Throttle(1000))
+                        {
+                            if (AutocraftDebugTab.Debug) PluginLog.Verbose("Closing crafting log");
+                            CommandProcessor.ExecuteThrottled("/clog");
+                        }
+                    }
+                    if (!Spiritbond.IsMateriaMenuOpen() && !isCrafting && !preparing)
+                    {
+                        Spiritbond.OpenMateriaMenu();
+                    }
+                    if (Spiritbond.IsMateriaMenuOpen() && !isCrafting && !preparing)
+                    {
+                        Spiritbond.ExtractFirstMateria();
+                    }
+                }
+                else
+                {
+                    Spiritbond.CloseMateriaMenu();
+                }
+
+                if (Service.Configuration.Repair && !RepairManager.ProcessRepair(false) && ((Service.Configuration.Materia && !Spiritbond.IsSpiritbondReadyAny()) || (!Service.Configuration.Materia)))
                 {
                     if (AutocraftDebugTab.Debug) PluginLog.Verbose("Entered repair check");
                     if (TryGetAddonByName<AtkUnitBase>("RecipeNote", out var addon) && addon->IsVisible && Svc.Condition[ConditionFlag.Crafting])
@@ -162,6 +193,7 @@ namespace Artisan.Autocraft
                                 }
                                 else
                                 {
+                                    if (AutocraftDebugTab.Debug) PluginLog.Debug($"Opening recipe {RecipeID}");
                                     AgentRecipeNote.Instance()->OpenRecipeByRecipeIdInternal((uint)RecipeID);
                                 }
                             }
@@ -173,8 +205,8 @@ namespace Artisan.Autocraft
 
         internal static void Draw()
         {
-            ImGui.Checkbox("启用耐力模式", ref Enable);
-            ImGuiComponents.HelpMarker("开始耐力模式制作前，您应该首先在制作笔记中选择配方和NQ/HQ材料分配。\n耐力模式将自动重复选定的配方，类似于自动制作，但在这样做之前会考虑食药Buff。");
+            ImGui.Checkbox("启用持续模式", ref Enable);
+            ImGuiComponents.HelpMarker("开始持续模式制作前，您需要首先在制作笔记中选择配方和NQ/HQ材料分配。\n持续模式将自动重复选定的配方，类似于自动制作，但在这样做之前会考虑食药Buff。");
             ImGuiEx.Text($"配方: {RecipeName}\nHQ材料: {HQData?.Select(x => x.ToString()).Join(", ")}");
             bool requireFoodPot = Service.Configuration.AbortIfNoFoodPot;
             if (ImGui.Checkbox("使用食物和/或药水", ref requireFoodPot))
@@ -182,16 +214,16 @@ namespace Artisan.Autocraft
                 Service.Configuration.AbortIfNoFoodPot = requireFoodPot;
                 Service.Configuration.Save();
             }
-            ImGuiComponents.HelpMarker("Artisan将需要配置了的食药，如果找不到将拒绝制作。");
+            ImGuiComponents.HelpMarker("Artisan会寻找配置的食物或药水, 如果没有找到将会终止制作。");
             if (requireFoodPot)
             {
                 {
-                    ImGuiEx.TextV("食物：");
+                    ImGuiEx.TextV("食物:");
                     ImGui.SameLine(150f.Scale());
                     ImGuiEx.SetNextItemFullWidth();
-                    if (ImGui.BeginCombo("##foodBuff", ConsumableChecker.Food.TryGetFirst(x => x.Id == Service.Configuration.Food, out var item) ? $"{(Service.Configuration.FoodHQ ? " " : "")}{item.Name}" : $"{(Service.Configuration.Food == 0 ? "Disabled" : $"{(Service.Configuration.FoodHQ ? " " : "")}{Service.Configuration.Food}")}"))
+                    if (ImGui.BeginCombo("##foodBuff", ConsumableChecker.Food.TryGetFirst(x => x.Id == Service.Configuration.Food, out var item) ? $"{(Service.Configuration.FoodHQ ? " " : "")}{item.Name}" : $"{(Service.Configuration.Food == 0 ? "无" : $"{(Service.Configuration.FoodHQ ? " " : "")}{Service.Configuration.Food}")}"))
                     {
-                        if (ImGui.Selectable("取消"))
+                        if (ImGui.Selectable("禁用"))
                         {
                             Service.Configuration.Food = 0;
                         }
@@ -216,12 +248,12 @@ namespace Artisan.Autocraft
                 }
 
                 {
-                    ImGuiEx.TextV("药水：");
+                    ImGuiEx.TextV("药水:");
                     ImGui.SameLine(150f.Scale());
                     ImGuiEx.SetNextItemFullWidth();
-                    if (ImGui.BeginCombo("##potBuff", ConsumableChecker.Pots.TryGetFirst(x => x.Id == Service.Configuration.Potion, out var item) ? $"{(Service.Configuration.PotHQ ? " " : "")}{item.Name}" : $"{(Service.Configuration.Potion == 0 ? "Disabled" : $"{(Service.Configuration.PotHQ ? " " : "")}{Service.Configuration.Potion}")}"))
+                    if (ImGui.BeginCombo("##potBuff", ConsumableChecker.Pots.TryGetFirst(x => x.Id == Service.Configuration.Potion, out var item) ? $"{(Service.Configuration.PotHQ ? " " : "")}{item.Name}" : $"{(Service.Configuration.Potion == 0 ? "无" : $"{(Service.Configuration.PotHQ ? " " : "")}{Service.Configuration.Potion}")}"))
                     {
-                        if (ImGui.Selectable("取消"))
+                        if (ImGui.Selectable("禁用"))
                         {
                             Service.Configuration.Potion = 0;
                         }
@@ -252,7 +284,7 @@ namespace Artisan.Autocraft
                 Service.Configuration.Repair = repairs;
                 Service.Configuration.Save();
             }
-            ImGuiComponents.HelpMarker("如果启用，当任何装备达到配置的修复阈值时，Artisan将自动使用暗物质修复您的装备。");
+            ImGuiComponents.HelpMarker("如果启用，Artisan将在任何装备达到配置的修复阈值时自动使用暗物质修理您的装备。");
             if (Service.Configuration.Repair)
             {
                 //ImGui.SameLine();
@@ -260,10 +292,19 @@ namespace Artisan.Autocraft
                 ImGui.SliderInt("##repairp", ref Service.Configuration.RepairPercent, 10, 100, $"{Service.Configuration.RepairPercent}%%");
             }
 
+
+            bool materia = Service.Configuration.Materia;
+            if (ImGui.Checkbox("自动精制魔晶石", ref materia))
+            {
+                Service.Configuration.Materia = materia;
+                Service.Configuration.Save();
+            }
+            ImGuiComponents.HelpMarker("当身上的任意装备的精炼值达到100%之后将自动进行魔晶石精制。");
+
             ImGui.Checkbox("只制作X次", ref Service.Configuration.CraftingX);
             if (Service.Configuration.CraftingX)
             {
-                ImGui.Text("次数:");
+                ImGui.Text("制作次数:");
                 ImGui.SameLine();
                 ImGui.PushItemWidth(200);
                 if (ImGui.InputInt("###TimesRepeat", ref Service.Configuration.CraftX))
@@ -325,20 +366,21 @@ namespace Artisan.Autocraft
                          * 
                          * */
 
-                        if (str.TextValue.Length == 0) return;
+                        if (str.ExtractText().Length == 0) return;
 
-                        if (str.TextValue[^1] == '')
+                        if (str.ExtractText()[^1] == '')
                         {
-                            rName += str.TextValue.Remove(str.TextValue.Length - 1, 1).Trim();
+                            rName += str.ExtractText().Remove(str.ExtractText().Length - 1, 1).Trim();
                         }
                         else
                         {
-                            rName += str.TextValue.Trim();
+                          
+                            rName += str.ExtractText().Trim();
                         }
 
                         if (Svc.Data.GetExcelSheet<Recipe>().TryGetFirst(x => x.ItemResult.Value.Name.RawString == rName, out var id))
                         {
-                            RecipeID = id.Unknown0;
+                            RecipeID = (int)id.RowId;
                             RecipeName = id.ItemResult.Value.Name;
                         }
                     }
@@ -346,7 +388,7 @@ namespace Artisan.Autocraft
                 }
                 catch (Exception ex)
                 {
-                    Dalamud.Logging.PluginLog.Error(ex, "Setting Recipe ID");
+                    PluginLog.Error(ex, "Setting Recipe ID");
                     RecipeID = 0;
                     RecipeName = "";
                 }

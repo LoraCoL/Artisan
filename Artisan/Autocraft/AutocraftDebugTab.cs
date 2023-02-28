@@ -1,4 +1,5 @@
 ﻿using Artisan.CraftingLogic;
+using Artisan.RawInformation;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
@@ -15,17 +16,20 @@ namespace Artisan.Autocraft
         internal static int offset = 0;
         internal static int SelRecId = 0;
         internal static bool Debug = false;
+
+        public static int DebugValue = 0;
+
         internal static void Draw()
         {
             ImGui.Checkbox("调试日志", ref Debug);
-            if (ImGui.CollapsingHeader("工匠的食物"))
+            if (ImGui.CollapsingHeader("所有能工巧匠食物"))
             {
                 foreach (var x in ConsumableChecker.GetFood())
                 {
                     ImGuiEx.Text($"{x.Id}: {x.Name}");
                 }
             }
-            if (ImGui.CollapsingHeader("物品栏中工匠的食物"))
+            if (ImGui.CollapsingHeader("背包内的工匠食物"))
             {
                 foreach (var x in ConsumableChecker.GetFood(true))
                 {
@@ -35,7 +39,7 @@ namespace Artisan.Autocraft
                     }
                 }
             }
-            if (ImGui.CollapsingHeader("物品栏中工匠的HQ食物"))
+            if (ImGui.CollapsingHeader("背包内的HQ工匠食物"))
             {
                 foreach (var x in ConsumableChecker.GetFood(true, true))
                 {
@@ -45,14 +49,14 @@ namespace Artisan.Autocraft
                     }
                 }
             }
-            if (ImGui.CollapsingHeader("工匠的药水"))
+            if (ImGui.CollapsingHeader("所有能工巧匠药水"))
             {
                 foreach (var x in ConsumableChecker.GetPots())
                 {
                     ImGuiEx.Text($"{x.Id}: {x.Name}");
                 }
             }
-            if (ImGui.CollapsingHeader("物品栏中工匠的药水"))
+            if (ImGui.CollapsingHeader("背包内的工匠药水"))
             {
                 foreach (var x in ConsumableChecker.GetPots(true))
                 {
@@ -62,7 +66,7 @@ namespace Artisan.Autocraft
                     }
                 }
             }
-            if (ImGui.CollapsingHeader("物品栏中工匠的HQ药水"))
+            if (ImGui.CollapsingHeader("背包内的HQ工匠药水"))
             {
                 foreach (var x in ConsumableChecker.GetPots(true, true))
                 {
@@ -73,29 +77,81 @@ namespace Artisan.Autocraft
                 }
             }
 
-            if (ImGui.CollapsingHeader("生产统计"))
+            if (ImGui.CollapsingHeader("制作状态"))
             {
+                ImGui.Text($"加工精度: {CharacterInfo.Control()}");
+                ImGui.Text($"作业精度: {CharacterInfo.Craftsmanship()}");
                 ImGui.Text($"当前耐久: {CurrentCraft.CurrentDurability}");
-                ImGui.Text($"满耐久: {CurrentCraft.MaxDurability}");
+                ImGui.Text($"最大耐久: {CurrentCraft.MaxDurability}");
                 ImGui.Text($"当前进展: {CurrentCraft.CurrentProgress}");
-                ImGui.Text($"满进展: {CurrentCraft.MaxProgress}");
+                ImGui.Text($"最大进展: {CurrentCraft.MaxProgress}");
                 ImGui.Text($"当前品质: {CurrentCraft.CurrentQuality}");
-                ImGui.Text($"满品质: {CurrentCraft.MaxQuality}");
+                ImGui.Text($"最大品质: {CurrentCraft.MaxQuality}");
                 ImGui.Text($"物品名称: {CurrentCraft.ItemName}");
                 ImGui.Text($"当前状态: {CurrentCraft.CurrentCondition}");
-                ImGui.Text($"当前工次: {CurrentCraft.CurrentStep}");
-                ImGui.Text($"阔步+比尔格连击: {CurrentCraft.GreatStridesByregotCombo()}");
-                ImGui.Text($"预测品质: {CurrentCraft.CalculateNewQuality(CurrentCraft.CurrentRecommendation)}");
+                ImGui.Text($"当前步骤: {CurrentCraft.CurrentStep}");
+                ImGui.Text($"当前快速制作步骤: {CurrentCraft.QuickSynthCurrent}");
+                ImGui.Text($"最大快速制作步骤: {CurrentCraft.QuickSynthMax}");
+                ImGui.Text($"阔步+比尔格: {CurrentCraft.GreatStridesByregotCombo()}");
+                ImGui.Text($"预期品质: {CurrentCraft.CalculateNewQuality(CurrentCraft.CurrentRecommendation)}");
+                ImGui.Text($"当前宏步骤: {CurrentCraft.MacroStep}");
+                ImGui.Text($"Collectibility Low: {CurrentCraft.CollectabilityLow}");
+                ImGui.Text($"Collectibility Mid: {CurrentCraft.CollectabilityMid}");
+                ImGui.Text($"Collectibility High: {CurrentCraft.CollectabilityHigh}");
+            }
+
+            if (ImGui.CollapsingHeader("魔晶石精炼"))
+            {
+                ImGui.Text($"主手 精炼度: {Spiritbond.Weapon}");
+                ImGui.Text($"副手 精炼度: {Spiritbond.Offhand}");
+                ImGui.Text($"头部 精炼度: {Spiritbond.Helm}");
+                ImGui.Text($"身体 精炼度: {Spiritbond.Body}");
+                ImGui.Text($"手臂 精炼度: {Spiritbond.Hands}");
+                ImGui.Text($"腿部 精炼度: {Spiritbond.Legs}");
+                ImGui.Text($"脚部 精炼度: {Spiritbond.Feet}");
+                ImGui.Text($"耳部 精炼度: {Spiritbond.Earring}");
+                ImGui.Text($"颈部 精炼度: {Spiritbond.Neck}");
+                ImGui.Text($"腕部 精炼度: {Spiritbond.Wrist}");
+                ImGui.Text($"右指 精炼度: {Spiritbond.Ring1}");
+                ImGui.Text($"左指 精炼度: {Spiritbond.Ring2}");
+
+                ImGui.Text($"是否有已经满精炼度的装备: {Spiritbond.IsSpiritbondReadyAny()}");
+
             }
             ImGui.Separator();
 
-            if (ImGui.Button("全部修复"))
+            if (ImGui.Button("修复所有装备"))
             {
                 RepairManager.ProcessRepair();
             }
             ImGuiEx.Text($"装备耐久: {RepairManager.GetMinEquippedPercent()}");
-            ImGuiEx.Text($"选择的配方: {AgentRecipeNote.Instance()->SelectedRecipeIndex}");
+            ImGuiEx.Text($"选中的配方: {AgentRecipeNote.Instance()->SelectedRecipeIndex}");
             ImGuiEx.Text($"材料不足: {HQManager.InsufficientMaterials}");
+
+            if (ImGui.Button($"打开长久模式的物品配方"))
+            {
+                CraftingLists.CraftingListFunctions.OpenRecipeByID((uint)Handler.RecipeID);
+            }
+
+            ImGui.InputInt("调试值", ref DebugValue);
+
+            if (ImGui.Button($"打开并进行快速制作"))
+            {
+                CurrentCraft.QuickSynthItem(DebugValue);
+            }
+            if (ImGui.Button($"关闭快速制作窗口"))
+            {
+                CurrentCraft.CloseQuickSynthWindow();
+            }
+            if (ImGui.Button($"打开精制魔晶石窗口"))
+            {
+                Spiritbond.OpenMateriaMenu();
+            }
+            if (ImGui.Button($"精制其中一个魔晶石"))
+            {
+                Spiritbond.ExtractFirstMateria();
+            }
+
 
             /*ImGui.InputInt("id", ref SelRecId);
             if (ImGui.Button("OpenRecipeByRecipeId"))
